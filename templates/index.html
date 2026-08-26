@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Compilador - Analizador lexico</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <h1>Compilador Python</h1>
+        <p>Etapa activa: Lexer</p>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="input-panel" aria-labelledby="source-title">
+        <div class="panel-heading">
+          <h2 id="source-title">Codigo fuente</h2>
+          <input id="file-input" type="file" accept=".py,text/x-python">
+        </div>
+        <textarea id="source-code" spellcheck="false">def suma(a, b):
+    return a + b
+</textarea>
+        <button id="analyze-button" type="button">Analizar</button>
+      </section>
+
+      <section class="results-panel" aria-labelledby="tokens-title">
+        <h2 id="tokens-title">Tokens</h2>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Token</th>
+                <th>Lexema</th>
+                <th>Patron</th>
+                <th>Linea</th>
+                <th>Columna</th>
+              </tr>
+            </thead>
+            <tbody id="tokens-body">
+              <tr>
+                <td colspan="6">Pendiente de analizar.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="diagnostics-panel" aria-labelledby="errors-title">
+        <h2 id="errors-title">Errores lexicos</h2>
+        <ul id="errors-list">
+          <li>Sin diagnosticos por ahora.</li>
+        </ul>
+      </section>
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </body>
+</html>
