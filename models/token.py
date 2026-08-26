@@ -1,9 +1,8 @@
 """Modelo de datos para tokens."""
 
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass, asdict
 
-
-@dataclass(frozen=True)
+@dataclass
 class Token:
     type: str
     lexeme: str
@@ -15,3 +14,4 @@ class Token:
 
     def to_dict(self):
         return asdict(self)
+

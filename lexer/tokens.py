@@ -1,38 +1,40 @@
 """Catalogo inicial de tokens para el lexer."""
 
 KEYWORDS = {
-    "if",
-    "else",
-    "elif",
-    "for",
-    "while",
-    "in",
-    "def",
-    "return",
-    "class",
-    "import",
-    "from",
-    "as",
-    "True",
-    "False",
-    "None",
-    "and",
-    "or",
-    "not",
+    "if": "IF",
+    "else": "ELSE",
+    "elif": "ELIF",
+    "for": "FOR",
+    "while": "WHILE",
+    "in": "IN",
+    "def": "DEF",
+    "return": "RETURN",
+    "class": "CLASS",
+    "import": "IMPORT",
+    "from": "FROM",
+    "as": "AS",
+    "True": "TRUE",
+    "False": "FALSE",
+    "None": "NONE",
+    "and": "AND",
+    "or": "OR",
+    "not": "NOT",
 }
+
 
 MULTI_CHAR_OPERATORS = {
     "==": "EQ",
     "!=": "NE",
     "<=": "LE",
     ">=": "GE",
-    "//": "FLOOR_DIV",
     "**": "POWER",
+    "//": "FLOOR_DIV",
     "+=": "PLUS_ASSIGN",
     "-=": "MINUS_ASSIGN",
     "*=": "STAR_ASSIGN",
     "/=": "SLASH_ASSIGN",
 }
+
 
 SINGLE_CHAR_OPERATORS = {
     "+": "PLUS",
@@ -45,6 +47,7 @@ SINGLE_CHAR_OPERATORS = {
     ">": "GT",
 }
 
+
 DELIMITERS = {
     "(": "LPAREN",
     ")": "RPAREN",
@@ -54,15 +57,10 @@ DELIMITERS = {
     "}": "RBRACE",
 }
 
+
 PUNCTUATION = {
     ",": "COMMA",
     ":": "COLON",
     ".": "DOT",
     ";": "SEMICOLON",
-}
-
-STRUCTURAL_TOKENS = {
-    "NEWLINE",
-    "INDENT",
-    "DEDENT",
 }

@@ -13,11 +13,11 @@ La carpeta actual funciona como la raiz del proyecto `compilador/` descrita en l
 |-- requirements.txt
 |-- README.md
 |-- api/
-|-- lexer/
-|-- parser/
-|-- semantic/
-|-- intermediate/
-|-- codegen/
+|-- lexer/  
+|-- parser/    -- FUTURAMENTE --
+|-- semantic/    -- FUTURAMENTE --
+|-- intermediate/   -- FUTURAMENTE --
+|-- codegen/    -- FUTURAMENTE --
 |-- models/
 |-- templates/
 |-- static/
