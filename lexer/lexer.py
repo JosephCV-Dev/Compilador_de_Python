@@ -19,7 +19,7 @@ from lexer.tokens import(
     PUNCTUATION,
     SINGLE_CHAR_OPERATORS
 )
-from lexer.errors import build_lexical_error
+from lexer.errors import build_indentation_error, build_lexical_error
 from models.token import Token
 
 FLOAT_REGEX = re.compile(FLOAT_PATTERN)
@@ -45,8 +45,80 @@ def tokenize(source):
     i = 0
     line = 1
     column = 1
+    at_line_start = True
+    indent_stack = [0]
+
     while i < len(source):
         character = source[i]
+
+        if at_line_start:
+            indent_start = i
+            indent_column = column
+
+            while i < len(source) and source[i] == " ":
+                i += 1
+                column += 1
+
+            if i >= len(source):
+                break
+
+            if source[i] == "\t":
+                errors.append(
+                    build_indentation_error(
+                        line,
+                        column,
+                        i,
+                        "tab",
+                    )
+                )
+                i += 1
+                column += 1
+                continue
+
+            if source[i] not in "\n#":
+                indent_level = i - indent_start
+
+                if indent_level > indent_stack[-1]:
+                    indent_stack.append(indent_level)
+                    tokens.append(
+                        build_token(
+                            "INDENT",
+                            source[indent_start:i],
+                            "indentation",
+                            line,
+                            indent_column,
+                            indent_start,
+                            i,
+                        )
+                    )
+                elif indent_level < indent_stack[-1]:
+                    while len(indent_stack) > 1 and indent_level < indent_stack[-1]:
+                        indent_stack.pop()
+                        tokens.append(
+                            build_token(
+                                "DEDENT",
+                                "",
+                                "dedentation",
+                                line,
+                                column,
+                                i,
+                                i,
+                            )
+                        )
+
+                    if indent_level != indent_stack[-1]:
+                        errors.append(
+                            build_indentation_error(
+                                line,
+                                column,
+                                i,
+                                indent_level,
+                            )
+                        )
+
+            at_line_start = False
+            character = source[i]
+
         #Bloque de reconocimiento y omisión de espacios en blanco
         if character in " \t\r":
             i += 1
@@ -68,6 +140,7 @@ def tokenize(source):
             i += 1
             line += 1
             column = 1
+            at_line_start = True
             continue
         #Bloque para reconocer y omitir comentarios
         if character == "#":
@@ -233,6 +306,20 @@ def tokenize(source):
         )
         i += 1
         column += 1
+    while len(indent_stack) > 1:
+        indent_stack.pop()
+        tokens.append(
+            build_token(
+                "DEDENT",
+                "",
+                "dedentation",
+                line,
+                column,
+                i,
+                i,
+            )
+        )
+
     return {
         "success": len(errors) == 0,
         "tokens": [token.to_dict() for token in tokens],
