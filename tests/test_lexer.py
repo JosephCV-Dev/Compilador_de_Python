@@ -49,3 +49,32 @@ def test_lexical_error():
     assert error["type"] == "LEXICAL_ERROR"
     assert error["lexeme"] == "@"
 
+def test_indentation_tokens():
+    source = "if x:\n    y = 1\nz = 2"
+    result = tokenize(source)
+    token_types = [token["type"] for token in result["tokens"]]
+
+    assert token_types == [
+        "IF",
+        "IDENTIFIER",
+        "COLON",
+        "NEWLINE",
+        "INDENT",
+        "IDENTIFIER",
+        "ASSIGN",
+        "INTEGER",
+        "NEWLINE",
+        "DEDENT",
+        "IDENTIFIER",
+        "ASSIGN",
+        "INTEGER",
+    ]
+    assert result["errors"] == []
+
+def test_invalid_indentation():
+    source = "if x:\n    y = 1\n  z = 2"
+    result = tokenize(source)
+    error_types = [error["type"] for error in result["errors"]]
+
+    assert result["success"] is False
+    assert "INDENTATION_ERROR" in error_types

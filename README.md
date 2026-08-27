@@ -65,3 +65,5 @@ Implementar el lexer en incrementos pequenos:
 4. Pruebas de identificadores, numeros, operadores, cadenas, indentacion y errores.
 5. Endpoint `/api/lexer`.
 6. Integracion con la interfaz.
+
+#Añadimos a pedro novelo y emiliano medina
