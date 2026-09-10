@@ -19,31 +19,23 @@ def health():
 
 @api_bp.post("/api/lexer")
 def run_lexer():
-    data = request.get_json(silent=True) or {}
-    source = data.get("source", "")
+    if not request.is_json:
+        return _invalid_request("Se requiere Content-Type: application/json.", 415)
 
-    try:
-        result = tokenize(source)
-    except NotImplementedError as exc:
-        return (
-            jsonify(
-                {
-                    "success": False,
-                    "tokens": [],
-                    "errors": [
-                        {
-                            "type": "NOT_IMPLEMENTED",
-                            "message": str(exc),
-                            "lexeme": "",
-                            "line": 1,
-                            "column": 1,
-                            "position": 0,
-                            "suggestion": "Implementar lexer.tokenize(source).",
-                        }
-                    ],
-                }
-            ),
-            501,
-        )
+    data = request.get_json(silent=True)
+    if not isinstance(data, dict):
+        return _invalid_request("El cuerpo debe ser un objeto JSON valido.")
+    if "source" not in data:
+        return _invalid_request("Falta el campo source.")
+    if not isinstance(data["source"], str):
+        return _invalid_request("El campo source debe ser una cadena de texto.")
 
-    return jsonify(result)
+    return jsonify(tokenize(data["source"]))
+
+
+def _invalid_request(message, status=400):
+    return jsonify({
+        "success": False,
+        "tokens": [],
+        "errors": [{"type": "INVALID_REQUEST", "message": message}],
+    }), status
