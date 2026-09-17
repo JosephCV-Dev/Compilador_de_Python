@@ -9,8 +9,13 @@
   <body>
     <header class="app-header">
       <div>
-        <h1>Compilador Python</h1>
-        <p>Etapa activa: Lexer</p>
+        <h1>Compilador Python: Etapa Análisis Léxico</h1>
+        <p>Equipo 2:</p>
+        <p>  - Joseph Chi</p>
+        <p>  - Pedro Novelo</p>
+        <p>  - Roberto Ramirez</p>
+        <p>  - Emiliano Medina</p>
+        <p>  - José Hernandez</p>
       </div>
     </header>
 
@@ -36,20 +41,18 @@
                 <th>Token</th>
                 <th>Lexema</th>
                 <th>Patron</th>
-                <th>Linea</th>
-                <th>Columna</th>
               </tr>
             </thead>
             <tbody id="tokens-body">
               <tr>
-                <td colspan="6">Pendiente de analizar.</td>
+                <td colspan="4">Pendiente de analizar.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <section class="diagnostics-panel" aria-labelledby="errors-title">
+      <section class="diagnostics-panel" aria-labelledby="errors-title" hidden>
         <h2 id="errors-title">Errores lexicos</h2>
         <ul id="errors-list">
           <li>Sin diagnosticos por ahora.</li>
@@ -57,6 +60,6 @@
       </section>
     </main>
 
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/app.js') }}"></script>
   </body>
 </html>
