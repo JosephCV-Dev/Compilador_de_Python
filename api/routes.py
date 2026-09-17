@@ -3,6 +3,7 @@
 from flask import Blueprint, jsonify, render_template, request
 
 from lexer import tokenize
+from token_stats import summarize_tokens
 
 api_bp = Blueprint("api", __name__)
 
@@ -30,7 +31,9 @@ def run_lexer():
     if not isinstance(data["source"], str):
         return _invalid_request("El campo source debe ser una cadena de texto.")
 
-    return jsonify(tokenize(data["source"]))
+    result = tokenize(data["source"])
+    result["statistics"] = summarize_tokens(result["tokens"])
+    return jsonify(result)
 
 
 def _invalid_request(message, status=400):

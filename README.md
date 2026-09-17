@@ -15,6 +15,7 @@ La carpeta actual funciona como la raiz del proyecto `compilador/` descrita en l
 |-- README.md
 |-- api/
 |-- lexer/
+|-- token_stats/
 |-- models/
 |-- templates/
 |-- static/
@@ -29,6 +30,7 @@ La carpeta actual funciona como la raiz del proyecto `compilador/` descrita en l
 - `lexer/lexer.py`: reconocimiento, posiciones, lineas logicas y pila de indentacion.
 - `lexer/errors.py`: construccion de diagnosticos especificos del lexer.
 - `lexer/__init__.py`: exporta `tokenize` como entrada publica del modulo.
+- `token_stats/`: calcula conteos y porcentajes sobre tokens ya reconocidos, sin depender de Flask ni del lexer.
 - `models/`: contratos de datos como `Token` y diagnosticos.
 - `api/`: validacion de solicitudes, rutas Flask y respuestas JSON.
 - `templates/` y `static/`: interfaz web para cargar codigo y mostrar resultados.
@@ -144,6 +146,37 @@ Los errores de solicitud mantienen `success: false`, `tokens: []` y una lista `e
 con `type: "INVALID_REQUEST"` y `message`. No tienen posiciones de codigo ficticias.
 La interfaz diferencia errores de solicitud, errores lexicos, fallos HTTP y fallos de red.
 `GET /` sirve la interfaz y `GET /api/health` permite comprobar el servicio.
+
+## Estadisticas
+
+La API agrega `statistics` a cada analisis completado. `tokenize` conserva su contrato;
+la ruta llama a `token_stats.summarize_tokens(result["tokens"])` sin volver a analizar el texto.
+El nuevo modulo solo necesita el campo `type` de cada token y no modifica la lista recibida.
+
+Ejemplo para `x + x` (incluye el NEWLINE final):
+
+```json
+{
+  "total_tokens": 4,
+  "distinct_types": 3,
+  "by_type": [
+    {"type": "IDENTIFIER", "count": 2, "percentage": 50.0},
+    {"type": "NEWLINE", "count": 1, "percentage": 25.0},
+    {"type": "PLUS", "count": 1, "percentage": 25.0}
+  ]
+}
+```
+
+Se cuentan todos los tokens de la tabla, incluidos NEWLINE, INDENT y DEDENT; no se cuentan
+comentarios, espacios omitidos ni diagnosticos. Se ordena por frecuencia descendente y,
+en caso de empate, por la clave del tipo. Los porcentajes usan el total como denominador
+y se redondean a dos decimales; su suma visible puede diferir de 100 por el redondeo.
+Un analisis vacio devuelve totales en cero y `by_type: []`.
+
+Si hay errores lexicos, las estadisticas describen los tokens que se pudieron reconocer.
+Una solicitud HTTP invalida no contiene estadisticas. La tabla inferior usa las mismas
+etiquetas en espanol del analisis lexico y retira los resultados anteriores al cargar o fallar.
+La seccion de errores sigue oculta mediante `hidden` en el HTML.
 
 ## Ejecucion y pruebas
 

@@ -5,6 +5,15 @@ const sourceCode = document.querySelector("#source-code");
 const analyzeButton = document.querySelector("#analyze-button");
 const tokensBody = document.querySelector("#tokens-body");
 const errorsList = document.querySelector("#errors-list");
+const statisticsBody = document.querySelector("#statistics-body");
+const statisticsFooter = document.querySelector("#statistics-footer");
+const statisticsTotal = document.querySelector("#statistics-total");
+const statisticsTypes = document.querySelector("#statistics-types");
+const statisticsPercentage = document.querySelector("#statistics-percentage");
+const percentageFormat = new Intl.NumberFormat("es-MX", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
 
 fileInput.addEventListener("change", async () => {
   const file = fileInput.files[0];
@@ -17,6 +26,7 @@ fileInput.addEventListener("change", async () => {
 
 analyzeButton.addEventListener("click", async () => {
   analyzeButton.disabled = true;
+  renderStatistics(null, "Analizando...");
   let failureMessage = "No se pudo conectar con la API.";
 
   try {
@@ -33,16 +43,23 @@ analyzeButton.addEventListener("click", async () => {
     const result = await response.json();
     if (
       !result || typeof result.success !== "boolean" ||
-      !Array.isArray(result.tokens) || !Array.isArray(result.errors)
+      !Array.isArray(result.tokens) || !Array.isArray(result.errors) ||
+      (response.ok && (
+        !result.statistics || !Array.isArray(result.statistics.by_type) ||
+        !Number.isInteger(result.statistics.total_tokens) ||
+        !Number.isInteger(result.statistics.distinct_types)
+      ))
     ) {
       throw new Error(failureMessage);
     }
     renderTokens(response.ok ? result.tokens : []);
+    renderStatistics(response.ok ? result.statistics : null);
     renderErrors(!response.ok && result.errors.length === 0
       ? [{ message: failureMessage }]
       : result.errors);
   } catch (error) {
     renderTokens([]);
+    renderStatistics(null);
     renderErrors([
       {
         message: failureMessage,
@@ -78,6 +95,30 @@ function formatLexeme(token) {
     return token.lexeme.replaceAll("\r", "\\r").replaceAll("\n", "\\n");
   }
   return token.lexeme;
+}
+
+function renderStatistics(statistics, message = "Estadisticas no disponibles.") {
+  statisticsFooter.hidden = !statistics;
+  statisticsTotal.textContent = statistics?.total_tokens ?? 0;
+  statisticsTypes.textContent = statistics?.distinct_types ?? 0;
+  statisticsPercentage.textContent = statistics?.total_tokens ? "100 %" : "0 %";
+
+  if (!statistics) {
+    statisticsBody.innerHTML = `<tr><td colspan="3">${escapeHtml(message)}</td></tr>`;
+    return;
+  }
+  if (statistics.by_type.length === 0) {
+    statisticsBody.innerHTML = '<tr><td colspan="3">Sin tokens para contar.</td></tr>';
+    return;
+  }
+
+  statisticsBody.innerHTML = statistics.by_type.map((entry) => `
+    <tr>
+      <th scope="row">${escapeHtml(getTokenLabel(entry.type))}</th>
+      <td class="numeric">${escapeHtml(entry.count)}</td>
+      <td class="numeric">${escapeHtml(percentageFormat.format(entry.percentage))} %</td>
+    </tr>
+  `).join("");
 }
 
 function renderErrors(errors) {

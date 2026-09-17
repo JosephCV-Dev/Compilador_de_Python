@@ -8,6 +8,16 @@ import { getTokenLabel } from "../static/js/token-labels.js";
 const originalDocument = globalThis.document;
 const originalFetch = globalThis.fetch;
 let instance = 0;
+const emptyStatistics = { total_tokens: 0, distinct_types: 0, by_type: [] };
+const sampleStatistics = {
+  total_tokens: 4,
+  distinct_types: 3,
+  by_type: [
+    { type: "IDENTIFIER", count: 2, percentage: 50 },
+    { type: "NEWLINE", count: 1, percentage: 25 },
+    { type: "PLUS", count: 1, percentage: 25 },
+  ],
+};
 
 afterEach(() => {
   globalThis.document = originalDocument;
@@ -61,7 +71,13 @@ test("renderiza cuatro columnas, escapa HTML y conserva lexemas originales", asy
   const elements = await loadApp(async (url, options) => {
     assert.equal(url, "/api/lexer");
     assert.deepEqual(JSON.parse(options.body), { source: "x = 10" });
-    return response({ success: true, tokens, errors: [] });
+    return response({ success: true, tokens, errors: [], statistics: {
+      total_tokens: 4, distinct_types: 3, by_type: [
+        { type: "NEWLINE", count: 2, percentage: 50 },
+        { type: "INTEGER", count: 1, percentage: 25 },
+        { type: "STRING", count: 1, percentage: 25 },
+      ],
+    } });
   });
   await elements.get("#analyze-button").click();
   const html = elements.get("#tokens-body").innerHTML;
@@ -77,6 +93,7 @@ test("errores lexicos conservan sus posiciones y escapan su mensaje", async () =
   const elements = await loadApp(async () => response({
     success: false, tokens: [],
     errors: [{ message: "Error <texto>", line: 2, column: 5 }],
+    statistics: emptyStatistics,
   }));
   await elements.get("#analyze-button").click();
   const html = elements.get("#errors-list").innerHTML;
@@ -112,7 +129,7 @@ test("un fallo de red permite volver a analizar", async () => {
   await elements.get("#analyze-button").click();
   assert.ok(elements.get("#errors-list").innerHTML.includes("No se pudo conectar"));
   assert.equal(elements.get("#analyze-button").disabled, false);
-  globalThis.fetch = async () => response({ success: true, tokens: [], errors: [] });
+  globalThis.fetch = async () => response({ success: true, tokens: [], errors: [], statistics: emptyStatistics });
   await elements.get("#analyze-button").click();
   assert.ok(elements.get("#errors-list").innerHTML.includes("Sin diagnosticos"));
 });
@@ -121,4 +138,71 @@ test("una respuesta JSON incompleta no se presenta como analisis exitoso", async
   const elements = await loadApp(async () => response({}));
   await elements.get("#analyze-button").click();
   assert.ok(elements.get("#errors-list").innerHTML.includes("formato invalido"));
+});
+
+test("estadisticas muestran conteos, porcentajes y nombres en espanol", async () => {
+  const elements = await loadApp(async () => response({
+    success: true, tokens: [], errors: [], statistics: sampleStatistics,
+  }));
+  await elements.get("#analyze-button").click();
+  const html = elements.get("#statistics-body").innerHTML;
+  assert.ok(html.includes("Identificador"));
+  assert.ok(html.includes("Salto de l\u00ednea"));
+  assert.ok(html.includes("50.00 %"));
+  assert.ok(html.includes("25.00 %"));
+  assert.equal((html.match(/<tr>/g) || []).length, 3);
+  assert.equal(String(elements.get("#statistics-total").textContent), "4");
+  assert.equal(String(elements.get("#statistics-types").textContent), "3");
+  assert.equal(elements.get("#statistics-footer").hidden, false);
+});
+
+test("un analisis vacio reemplaza los conteos anteriores por ceros", async () => {
+  const elements = await loadApp(async () => response({
+    success: true, tokens: [], errors: [], statistics: sampleStatistics,
+  }));
+  await elements.get("#analyze-button").click();
+  globalThis.fetch = async () => response({
+    success: true, tokens: [], errors: [], statistics: emptyStatistics,
+  });
+  await elements.get("#analyze-button").click();
+  assert.equal(String(elements.get("#statistics-total").textContent), "0");
+  assert.equal(String(elements.get("#statistics-types").textContent), "0");
+  assert.equal(elements.get("#statistics-percentage").textContent, "0 %");
+  assert.ok(elements.get("#statistics-body").innerHTML.includes("Sin tokens para contar"));
+});
+
+test("al cargar y fallar se retiran las estadisticas anteriores", async () => {
+  const elements = await loadApp(async () => response({
+    success: true, tokens: [], errors: [], statistics: sampleStatistics,
+  }));
+  await elements.get("#analyze-button").click();
+  globalThis.fetch = async () => {
+    assert.equal(elements.get("#statistics-footer").hidden, true);
+    assert.ok(elements.get("#statistics-body").innerHTML.includes("Analizando"));
+    throw new TypeError("network");
+  };
+  await elements.get("#analyze-button").click();
+  assert.equal(elements.get("#statistics-footer").hidden, true);
+  assert.ok(elements.get("#statistics-body").innerHTML.includes("no disponibles"));
+  assert.ok(!elements.get("#statistics-body").innerHTML.includes("Identificador"));
+});
+
+test("errores HTTP no muestran un conteo de cero como analisis valido", async () => {
+  const elements = await loadApp(async () => response({
+    success: false, tokens: [], errors: [{ message: "Falta source." }],
+  }, 400));
+  await elements.get("#analyze-button").click();
+  assert.equal(elements.get("#statistics-footer").hidden, true);
+  assert.ok(elements.get("#statistics-body").innerHTML.includes("no disponibles"));
+});
+
+test("tipos nuevos en estadisticas se escapan antes de mostrar su etiqueta", async () => {
+  const elements = await loadApp(async () => response({
+    success: true, tokens: [], errors: [], statistics: {
+      total_tokens: 1, distinct_types: 1,
+      by_type: [{ type: "<nuevo>", count: 1, percentage: 100 }],
+    },
+  }));
+  await elements.get("#analyze-button").click();
+  assert.ok(elements.get("#statistics-body").innerHTML.includes("&lt;nuevo&gt;"));
 });
