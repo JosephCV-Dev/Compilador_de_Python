@@ -26,10 +26,11 @@ fileInput.addEventListener("change", async () => {
 
 analyzeButton.addEventListener("click", async () => {
   analyzeButton.disabled = true;
-  renderStatistics(null, "Analizando...");
-  let failureMessage = "No se pudo conectar con la API.";
+  let failureMessage = "No se pudo actualizar la vista de estadisticas.";
 
   try {
+    renderStatistics(null, "Analizando...");
+    failureMessage = "No se pudo conectar con la API.";
     const response = await fetch("/api/lexer", {
       method: "POST",
       headers: {
@@ -98,6 +99,11 @@ function formatLexeme(token) {
 }
 
 function renderStatistics(statistics, message = "Estadisticas no disponibles.") {
+  // La ausencia de esta vista no debe bloquear el analisis lexico.
+  if (!statisticsBody || !statisticsFooter || !statisticsTotal ||
+      !statisticsTypes || !statisticsPercentage) {
+    return;
+  }
   statisticsFooter.hidden = !statistics;
   statisticsTotal.textContent = statistics?.total_tokens ?? 0;
   statisticsTypes.textContent = statistics?.distinct_types ?? 0;

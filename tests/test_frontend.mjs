@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { afterEach, test } from "node:test";
 import { fileURLToPath } from "node:url";
 
@@ -7,6 +8,27 @@ import { getTokenLabel } from "../static/js/token-labels.js";
 
 const originalDocument = globalThis.document;
 const originalFetch = globalThis.fetch;
+const templateElements = JSON.parse(execFileSync(process.env.PYTHON || "python3", ["-c", `
+import json
+import sys
+from html.parser import HTMLParser
+
+class Elements(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.elements = []
+    def handle_starttag(self, tag, attrs):
+        attrs = dict(attrs)
+        if "id" in attrs:
+            self.elements.append(attrs)
+
+parser = Elements()
+parser.feed(sys.stdin.read())
+print(json.dumps(parser.elements))
+`], {
+  input: readFileSync(new URL("../templates/index.html", import.meta.url), "utf8"),
+  encoding: "utf8",
+}));
 let instance = 0;
 const emptyStatistics = { total_tokens: 0, distinct_types: 0, by_type: [] };
 const sampleStatistics = {
@@ -24,18 +46,18 @@ afterEach(() => {
   globalThis.fetch = originalFetch;
 });
 
-async function loadApp(fetchImplementation) {
-  const elements = new Map();
+async function loadApp(fetchImplementation, missingIds = []) {
+  const elements = new Map(templateElements
+    .filter(attrs => !missingIds.includes(attrs.id))
+    .map(attrs => [`#${attrs.id}`, {
+      value: "x = 10",
+      innerHTML: "",
+      hidden: Object.hasOwn(attrs, "hidden"),
+      addEventListener(event, handler) { this[event] = handler; },
+    }]));
   globalThis.document = {
     querySelector(selector) {
-      if (!elements.has(selector)) {
-        elements.set(selector, {
-          value: "x = 10",
-          innerHTML: "",
-          addEventListener(event, handler) { this[event] = handler; },
-        });
-      }
-      return elements.get(selector);
+      return elements.get(selector) ?? null;
     },
   };
   globalThis.fetch = fetchImplementation;
@@ -46,6 +68,49 @@ async function loadApp(fetchImplementation) {
 function response(body, status = 200) {
   return { ok: status >= 200 && status < 300, status, json: async () => body };
 }
+
+test("la plantilla real contiene todos los elementos usados por la interfaz", async () => {
+  const elements = await loadApp(async () => response({}));
+  for (const id of ["file-input", "source-code", "analyze-button", "tokens-body", "errors-list",
+                    "statistics-body", "statistics-footer", "statistics-total",
+                    "statistics-types", "statistics-percentage"]) {
+    assert.ok(elements.has(`#${id}`), `Falta #${id} en templates/index.html`);
+  }
+  assert.equal(document.querySelector("#inexistente"), null);
+});
+
+test("la ausencia de estadisticas no bloquea el boton ni el analisis", async () => {
+  let requests = 0;
+  const elements = await loadApp(async () => {
+    requests++;
+    return response({
+      success: true, errors: [], statistics: sampleStatistics,
+      tokens: [{ type: "IDENTIFIER", lexeme: "x", pattern: "Nombre" }],
+    });
+  }, ["statistics-footer"]);
+  await elements.get("#analyze-button").click();
+  assert.equal(requests, 1);
+  assert.equal(elements.get("#analyze-button").disabled, false);
+  assert.ok(elements.get("#tokens-body").innerHTML.includes("Identificador"));
+});
+
+test("un fallo al mostrar el estado inicial vuelve a habilitar el boton", async () => {
+  let requests = 0;
+  let failed = false;
+  const elements = await loadApp(async () => { requests++; });
+  Object.defineProperty(elements.get("#statistics-body"), "innerHTML", {
+    set() {
+      if (!failed) {
+        failed = true;
+        throw new Error("fallo de renderizado");
+      }
+    },
+  });
+  await elements.get("#analyze-button").click();
+  assert.equal(requests, 0);
+  assert.equal(elements.get("#analyze-button").disabled, false);
+  assert.ok(elements.get("#errors-list").innerHTML.includes("No se pudo actualizar"));
+});
 
 test("todos los tipos del lexer tienen etiqueta visual", () => {
   const catalog = execFileSync(process.env.PYTHON || "python3", ["-c", `

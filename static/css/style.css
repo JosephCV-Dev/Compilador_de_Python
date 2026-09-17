@@ -56,6 +56,10 @@ body {
   margin-bottom: 16px;
 }
 
+.results-panel {
+  min-width: 0;
+}
+
 textarea {
   border: 1px solid #bdc9d1;
   border-radius: 6px;
@@ -102,6 +106,40 @@ td {
 
 th {
   background: #edf3f5;
+}
+
+.statistics-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #d8e0e4;
+}
+
+.statistics-section h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+}
+
+.statistics-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
+.statistics-table th:first-child {
+  width: 50%;
+}
+
+.statistics-table th,
+.statistics-table td {
+  overflow-wrap: anywhere;
+}
+
+.statistics-table .numeric {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.statistics-table tfoot {
+  font-weight: 700;
 }
 
 #errors-list {
