@@ -19,7 +19,9 @@
       </div>
     </header>
 
-    <main class="layout">pytpy-heading">
+    <main class="layout">
+      <section class="input-panel" aria-labelledby="source-title">
+        <div class="panel-heading">
           <h2 id="source-title">Codigo fuente</h2>
           <input id="file-input" type="file" accept=".py,text/x-python">
         </div>
@@ -48,6 +50,36 @@
             </tbody>
           </table>
         </div>
+
+        <section class="statistics-section" aria-labelledby="statistics-title">
+          <h3 id="statistics-title">Estadísticas léxicas</h3>
+          <div class="table-wrapper">
+            <table class="statistics-table" aria-labelledby="statistics-title">
+              <thead>
+                <tr>
+                  <th scope="col">Tipo de token</th>
+                  <th scope="col" class="numeric">Cantidad</th>
+                  <th scope="col" class="numeric">Porcentaje</th>
+                </tr>
+              </thead>
+              <tbody id="statistics-body">
+                <tr><td colspan="3">Pendiente de analizar.</td></tr>
+              </tbody>
+              <tfoot id="statistics-footer" hidden>
+                <tr>
+                  <th scope="row">Total de tokens</th>
+                  <td id="statistics-total" class="numeric">0</td>
+                  <td id="statistics-percentage" class="numeric">0 %</td>
+                </tr>
+                <tr>
+                  <th scope="row">Tipos distintos</th>
+                  <td id="statistics-types" class="numeric">0</td>
+                  <td class="numeric">-</td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </section>
       </section>
 
       <section class="diagnostics-panel" aria-labelledby="errors-title" hidden>

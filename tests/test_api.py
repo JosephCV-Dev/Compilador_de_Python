@@ -1,5 +1,7 @@
 """Validacion HTTP y contrato entre la API y el lexer."""
 
+from html.parser import HTMLParser
+
 import pytest
 
 from app import create_app
@@ -66,6 +68,31 @@ def test_page_and_static_modules(client):
     assert b'class="diagnostics-panel" aria-labelledby="errors-title" hidden' in page.data
     for path in ("/static/js/app.js", "/static/js/token-labels.js", "/static/css/style.css"):
         assert client.get(path).status_code == 200
+
+
+def test_page_keeps_balanced_layout_containers(client):
+    class LayoutParser(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.stack = []
+            self.classes = set()
+
+        def handle_starttag(self, tag, attrs):
+            if tag in {"main", "section", "div"}:
+                self.stack.append(tag)
+                self.classes.update(dict(attrs).get("class", "").split())
+
+        def handle_endtag(self, tag):
+            if tag in {"main", "section", "div"}:
+                assert self.stack and self.stack[-1] == tag, f"Cierre incorrecto: {tag}"
+                self.stack.pop()
+
+    html = client.get("/").get_data(as_text=True)
+    parser = LayoutParser()
+    parser.feed(html)
+    assert parser.stack == []
+    assert {"input-panel", "panel-heading", "statistics-section"} <= parser.classes
+    assert "pytpy-heading" not in html
 
 
 def test_statistics_count_the_tokens_in_the_same_response(client):
